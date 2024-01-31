@@ -16,6 +16,8 @@ class Agent:
         self.gamma = 0  # Discount Rate
         self.memory = deque(maxlen=MAX_MEM)  # Queue to store memory
         # TODO:  Model , Trainer
+        self.model = None
+        self.trainer = None
 
     def get_state(self, game):
         head = game.snake[0]
@@ -60,15 +62,25 @@ class Agent:
         return np.array(state, dtype=int)
 
     def remember(self, state, action, rewards, next_state, done):
-        pass
+        self.memory.append(
+            (state, action, rewards, next_state, done)
+        )  # pop left is max_memory reached
 
     def train_long_memory(self):
-        pass
+        if len(self.memory) > BATCH_SIZE:
+            mini_sample = random.sample(
+                self.memory, BATCH_SIZE
+            )  # List of tuples with BATCH_SIZE length
+        else:
+            mini_sample = self.memory
+        states, actions, rewards, next_states, dones = zip(*mini_sample)
+        self.trainer.train_step(states, actions, rewards, next_states, dones)
 
-    def train_short_memory(self, state, action, rewards, next_state, done):
-        pass
+    def train_short_memory(self, state, action, reward, next_state, done):
+        self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
+        # Random Move: Tradeoff between exploration vs exploitation
         pass
 
 
