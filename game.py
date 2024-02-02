@@ -6,13 +6,7 @@ import numpy as np
 
 pygame.init()
 font = pygame.font.Font("./Resources/arial.ttf", 25)
-
-# TODO:
-# Reset Feature for the agent
-# Reward Function
-# Play Function -> play(action) => Direction
-# Game Iteration
-# Collision Function to check for collision
+# font = pygame.font.SysFont('arial', 25)
 
 
 class Direction(Enum):
@@ -32,10 +26,10 @@ BLUE2 = (0, 100, 255)
 BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 20
-SPEED = 20
+SPEED = 500
 
 
-class SnakeGame:
+class SnakeGameAI:
     def __init__(self, w=640, h=480):
         self.w = w
         self.h = h
@@ -83,9 +77,12 @@ class SnakeGame:
         # 3. check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or (self.frame_iteration > 100 * len(self.snake)):
+        if self.is_collision() or self.frame_iteration > 100 * len(self.snake):
+            if self.is_collision():
+                reward = -20
+            else:
+                reward = -10
             game_over = True
-            reward = -10
             return reward, game_over, self.score
 
         # 4. place new food or just move
@@ -103,7 +100,7 @@ class SnakeGame:
         return reward, game_over, self.score
 
     def is_collision(self, pt=None):
-        if pt == None:
+        if pt is None:
             pt = self.head
         # hits boundary
         if (
@@ -141,49 +138,31 @@ class SnakeGame:
         pygame.display.flip()
 
     def _move(self, action):
-        clockwise_direction = [
-            Direction.RIGHT,
-            Direction.DOWN,
-            Direction.LEFT,
-            Direction.UP,
-        ]
-        idx = clockwise_direction.index(self.direction)
+        # [straight, right, left]
 
-        if np.array_equal(action, np.array([1, 0, 0])):  # Move on same path
-            new_idx = idx
-        elif np.array_equal(action, np.array([0, 1, 0])):  # R->D->L->U
-            new_idx = (idx + 1) % 4
-        elif np.array_equal(action, np.array([0, 0, 1])):  # R->U->L->D
-            new_idx = (idx - 1) % 4
+        clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
+        idx = clock_wise.index(self.direction)
 
-        new_dir = clockwise_direction[new_idx]  # Left Turn
-        self.dir = new_dir
+        if np.array_equal(action, [1, 0, 0]):
+            new_dir = clock_wise[idx]  # no change
+        elif np.array_equal(action, [0, 1, 0]):
+            next_idx = (idx + 1) % 4
+            new_dir = clock_wise[next_idx]  # right turn r -> d -> l -> u
+        else:  # [0, 0, 1]
+            next_idx = (idx - 1) % 4
+            new_dir = clock_wise[next_idx]  # left turn r -> u -> l -> d
+
+        self.direction = new_dir
 
         x = self.head.x
         y = self.head.y
-
-        if self.dir == Direction.RIGHT:
+        if self.direction == Direction.RIGHT:
             x += BLOCK_SIZE
-        elif self.dir == Direction.LEFT:
+        elif self.direction == Direction.LEFT:
             x -= BLOCK_SIZE
-        elif self.dir == Direction.DOWN:
+        elif self.direction == Direction.DOWN:
             y += BLOCK_SIZE
-        elif self.dir == Direction.UP:
+        elif self.direction == Direction.UP:
             y -= BLOCK_SIZE
 
         self.head = Point(x, y)
-
-
-# if __name__ == "__main__":
-#     game = SnakeGame()
-
-#     # game loop
-#     while True:
-#         game_over, score = game.play_step()
-
-#         if game_over == True:
-#             break
-
-#     print("Final Score", score)
-
-#     pygame.quit()
