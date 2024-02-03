@@ -5,6 +5,7 @@ from collections import deque
 from game import SnakeGameAI, Direction, Point
 from model import Linear_QNet, QTrainer
 from helper import plot
+import os
 
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
@@ -18,6 +19,12 @@ class Agent:
         self.gamma = 0.9  # discount rate
         self.memory = deque(maxlen=MAX_MEMORY)  # popleft()
         self.model = Linear_QNet(11, 256, 3)
+        self.previously_trained = False
+        model_path = "model/model.pth"  # Specify the path to your saved model
+        if os.path.exists(model_path):
+            self.model.load_state_dict(torch.load(model_path))
+            self.model.eval()
+            self.previously_trained = True
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game):
@@ -85,7 +92,7 @@ class Agent:
         # random moves: tradeoff exploration / exploitation
         self.epsilon = 80 - self.n_games
         final_move = [0, 0, 0]
-        if random.randint(0, 200) < self.epsilon:
+        if (random.randint(0, 200) < self.epsilon) & (self.previously_trained == False):
             move = random.randint(0, 2)
             final_move[move] = 1
         else:
